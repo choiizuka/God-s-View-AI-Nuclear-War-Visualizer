@@ -5,7 +5,7 @@ God-s-View-AI-Nuclear-War-Visualizer | 神の視点-AI-Nuclear-War-Visualizer
 
 **God-s-View-AI-Nuclear-War-Visualizer**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-purple)](https://choiizuka.github.io/God-s-View-AI-Nuclear-War-Visualizer/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-purple)](https://choiizuka.github.io/God-s-View-AI-Nuclear-War-Visualizer)
 
 > スライダーを右に動かすと、AIの軍事利用が核エスカレーションへと連鎖していく。
 > 60%を超えた瞬間から、人間の制御は終わる。
