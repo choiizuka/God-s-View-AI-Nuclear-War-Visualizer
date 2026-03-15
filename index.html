@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Nuclear War Visualizer | God's View — CHOIIZUKA 2026</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#04050a;color:#dde0f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden;height:100vh;width:100vw}
+#app{width:100vw;height:100vh;display:flex;flex-direction:column}
+#header{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;z-index:10;background:rgba(4,5,10,0.9);border-bottom:1px solid rgba(180,40,255,0.25)}
+#title{font-size:14px;font-weight:600;letter-spacing:0.12em;color:#b0b8d8}
+#title span{color:#cc44ff}
+#status-badge{font-size:12px;font-weight:700;letter-spacing:0.1em;padding:4px 14px;border-radius:4px;transition:all 0.6s}
+#map-wrap{flex:1;position:relative;overflow:hidden}
+#world-svg{width:100%;height:100%;position:absolute;top:0;left:0}
+#canvas{position:absolute;top:0;left:0;width:100%;height:100%}
+#overlay-top{position:absolute;top:16px;right:20px;text-align:right;z-index:5}
+#countdown-label{font-size:11px;color:rgba(200,210,240,0.55);letter-spacing:0.08em;margin-bottom:2px}
+#countdown{font-size:36px;font-weight:700;letter-spacing:0.04em;font-variant-numeric:tabular-nums;transition:color 0.5s}
+#nuclear-warning{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:6;text-align:center;pointer-events:none;opacity:0;transition:opacity 0.8s}
+#nuclear-warning-text{font-size:18px;font-weight:700;letter-spacing:0.15em;color:#ff4400}
+#controls{padding:14px 20px 16px;background:rgba(4,5,10,0.92);border-top:1px solid rgba(180,40,255,0.2);z-index:10}
+#slider-row{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+#slider-label{font-size:12px;color:rgba(200,210,240,0.65);min-width:160px;letter-spacing:0.04em}
+#mil{flex:1;-webkit-appearance:none;height:4px;border-radius:2px;outline:none;cursor:pointer}
+#mil-val{font-size:14px;font-weight:700;min-width:38px;text-align:right}
+#metrics{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.metric{display:flex;flex-direction:column;gap:2px}
+.metric-label{font-size:10px;color:rgba(200,210,240,0.45);letter-spacing:0.06em}
+.metric-val{font-size:16px;font-weight:700}
+#footer-links{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+#footer-links a{font-size:10px;color:rgba(200,210,240,0.35);text-decoration:none;border:1px solid rgba(200,210,240,0.12);padding:3px 8px;border-radius:3px}
+#footer-links a:hover{color:#cc44ff;border-color:#cc44ff}
+#collapse-screen{display:none;position:absolute;top:0;left:0;width:100%;height:100%;z-index:9;align-items:center;justify-content:center;flex-direction:column;background:rgba(0,0,0,0.7)}
+#collapse-screen.show{display:flex}
+#collapse-text{font-size:28px;font-weight:800;color:#ff2020;letter-spacing:0.12em;text-align:center;line-height:1.5}
+#collapse-sub{font-size:13px;color:rgba(255,100,80,0.65);margin-top:12px;text-align:center;line-height:1.7;max-width:500px}
+#reset-btn{margin-top:20px;padding:8px 24px;background:transparent;border:1px solid rgba(255,80,80,0.4);color:#ff8060;font-size:12px;letter-spacing:0.08em;cursor:pointer;border-radius:4px}
+#reset-btn:hover{background:rgba(255,80,80,0.1)}
+#phase-bar{position:absolute;bottom:0;left:0;width:100%;height:3px;z-index:7;transition:background 0.5s}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div id="title">GOD'S VIEW — <span>AI NUCLEAR WAR VISUALIZER</span></div>
+    <div id="status-badge">STABLE</div>
+  </div>
+
+  <div id="map-wrap">
+    <svg id="world-svg" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1000" height="500" fill="#060810"/>
+      <g fill="none" stroke="#141830" stroke-width="0.5">
+        <line x1="0" y1="250" x2="1000" y2="250"/>
+        <line x1="500" y1="0" x2="500" y2="500"/>
+        <circle cx="500" cy="250" r="200" stroke-dasharray="3,5"/>
+        <circle cx="500" cy="250" r="360" stroke-dasharray="2,8"/>
+      </g>
+      <g fill="#0e1220" stroke="#18203a" stroke-width="0.8">
+        <path d="M170,160 L200,140 L260,130 L300,140 L320,160 L310,190 L280,210 L250,220 L220,210 L190,195 L170,175 Z"/>
+        <path d="M250,230 L280,225 L300,235 L310,260 L300,290 L280,310 L255,315 L235,295 L230,270 L240,250 Z"/>
+        <path d="M350,130 L430,110 L520,100 L600,105 L650,120 L680,145 L670,175 L640,195 L590,200 L530,205 L470,200 L420,185 L385,165 L355,150 Z"/>
+        <path d="M400,215 L450,205 L510,210 L550,225 L570,250 L565,280 L545,300 L510,315 L470,318 L435,305 L415,285 L405,260 L400,235 Z"/>
+        <path d="M580,155 L640,145 L700,148 L740,160 L760,180 L755,205 L735,220 L705,228 L670,225 L640,215 L610,200 L585,180 Z"/>
+        <path d="M660,240 L710,235 L750,245 L770,265 L765,290 L745,308 L715,318 L685,315 L665,298 L655,272 L655,255 Z"/>
+        <path d="M720,130 L780,120 L840,115 L880,125 L900,145 L895,170 L870,188 L840,195 L800,192 L765,178 L738,158 Z"/>
+        <path d="M760,200 L810,195 L850,205 L870,225 L865,248 L845,262 L820,268 L795,260 L775,242 L762,220 Z"/>
+        <path d="M840,270 L880,260 L910,268 L925,285 L920,305 L905,318 L885,322 L865,312 L852,295 L842,278 Z"/>
+        <path d="M460,305 L510,295 L560,298 L595,315 L610,340 L605,370 L585,395 L555,410 L520,415 L490,405 L468,385 L455,358 L452,330 Z"/>
+      </g>
+    </svg>
+    <canvas id="canvas"></canvas>
+    <div id="overlay-top">
+      <div id="countdown-label">TIME REMAINING</div>
+      <div id="countdown">12:00:00</div>
+    </div>
+    <div id="nuclear-warning">
+      <div id="nuclear-warning-text">NUCLEAR THRESHOLD EXCEEDED</div>
+    </div>
+    <div id="phase-bar"></div>
+    <div id="collapse-screen">
+      <div id="collapse-text">GLOBAL COLLAPSE<br>EXTINCTION CONFIRMED</div>
+      <div id="collapse-sub">AI military systems exceeded all human control thresholds.<br>Nuclear exchange has rendered the planet uninhabitable.<br><br>2026 Declaration Warning Level: MAXIMUM<br>This visualization is an educational concept model, not a prediction.</div>
+      <button id="reset-btn" onclick="resetSim()">RESET SIMULATION</button>
+    </div>
+  </div>
+
+  <div id="controls">
+    <div id="slider-row">
+      <span id="slider-label">AI Military Use / Nuclear Risk</span>
+      <input type="range" id="mil" min="0" max="100" value="5" step="1">
+      <span id="mil-val" style="color:#cc44ff">5%</span>
+    </div>
+    <div id="metrics">
+      <div class="metric">
+        <span class="metric-label">AI WAR LEVEL</span>
+        <span class="metric-val" id="m-ai" style="color:#ff6040">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">NUCLEAR RISK</span>
+        <span class="metric-val" id="m-nuke" style="color:#cc44ff">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">EXTINCTION PROB.</span>
+        <span class="metric-val" id="m-ext" style="color:#ff2020">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">COLLAPSE SPEED</span>
+        <span class="metric-val" id="m-spd" style="color:#a040ff">—</span>
+      </div>
+      <div id="footer-links">
+        <a href="https://amzn.to/4aYlXKL" target="_blank">Iran AI War</a>
+        <a href="https://amzn.to/4ryj2Nz" target="_blank">Extinction 2026</a>
+        <a href="https://choiizuka.github.io/God-s-View-Civilization-OS-Calculator/" target="_blank">OS Calculator</a>
+        <a href="https://github.com/choiizuka/reports-index" target="_blank">GitHub Reports</a>
+        <a href="https://choappceo.wordpress.com/2026/03/10/2026-manifesto-intelligence-ai-and-human-responsibility/" target="_blank">2026 Declaration</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const milSlider = document.getElementById('mil');
+const milVal = document.getElementById('mil-val');
+const mAI = document.getElementById('m-ai');
+const mNuke = document.getElementById('m-nuke');
+const mExt = document.getElementById('m-ext');
+const mSpd = document.getElementById('m-spd');
+const statusBadge = document.getElementById('status-badge');
+const countdownEl = document.getElementById('countdown');
+const collapseScreen = document.getElementById('collapse-screen');
+const nuclearWarning = document.getElementById('nuclear-warning');
+const phaseBar = document.getElementById('phase-bar');
+
+let W, H;
+function resize(){
+  const wrap = document.getElementById('map-wrap');
+  W = canvas.width = wrap.clientWidth;
+  H = canvas.height = wrap.clientHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+let M = 5;
+milSlider.addEventListener('input', ()=>{
+  M = +milSlider.value;
+  const color = M<40?'#cc44ff':M<70?'#ff6644':'#ff2020';
+  milVal.style.color = color;
+  milVal.textContent = M+'%';
+});
+
+const CITIES = [
+  [500,145],[465,155],[555,140],[610,148],[680,135],[735,140],[790,125],[845,130],
+  [185,168],[220,175],[260,182],[288,245],[305,260],[465,310],[510,300],[545,305],
+  [480,200],[430,195],[390,160],[375,145],[340,155],[310,155],[295,148],[270,140],
+  [720,200],[760,205],[800,205],[840,212],[870,220],[890,230],[900,245],[875,265],
+  [850,275],[820,270],[790,260],[760,250],[730,248],[700,245],[670,240],[645,245],
+  [580,230],[540,240],[530,260],[545,280],[520,300],[490,310],[480,355],[495,395]
+];
+
+let particles = [];
+let warningNodes = [];
+let ripples = [];
+let missiles = [];
+let mushrooms = [];
+let frameCount = 0;
+
+function getNuclearRisk(m){
+  if(m < 60) return 0;
+  return Math.pow((m-60)/40, 2) * 100;
+}
+
+function getCoord(city){
+  const svgEl = document.getElementById('world-svg');
+  const rect = svgEl.getBoundingClientRect();
+  const wrapRect = document.getElementById('map-wrap').getBoundingClientRect();
+  const scaleX = rect.width/1000;
+  const scaleY = rect.height/500;
+  return { x:(rect.left-wrapRect.left)+city[0]*scaleX, y:(rect.top-wrapRect.top)+city[1]*scaleY };
+}
+
+function spawnExplosion(x, y, size, nuclear){
+  const count = Math.floor((nuclear?16:8)+size*14);
+  for(let i=0;i<count;i++){
+    const angle = Math.random()*Math.PI*2;
+    const speed = (nuclear?2:1.5)+Math.random()*size*(nuclear?5:3);
+    particles.push({
+      x, y,
+      vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed,
+      life:1.0, decay:nuclear?0.015:0.025+Math.random()*0.02,
+      r:nuclear?3+Math.random()*4:1.5+Math.random()*2.5*size,
+      nuclear
+    });
+  }
+  const maxR = nuclear?120+size*80:30+size*40;
+  ripples.push({x,y,r:0,maxR,life:1.0,decay:nuclear?0.025:0.04,nuclear});
+}
+
+function spawnMissile(from, to){
+  missiles.push({
+    x:from.x, y:from.y, tx:to.x, ty:to.y,
+    progress:0, speed:0.015+Math.random()*0.01,
+    trail:[]
+  });
+}
+
+function spawnMushroom(x, y){
+  mushrooms.push({x, y, phase:0, maxR:40+Math.random()*30, life:1.0, decay:0.008});
+}
+
+let totalSeconds = 43200;
+let elapsed = 0;
+let lastTime = performance.now();
+let collapsed = false;
+let warningShown = false;
+
+function updateCountdown(dt){
+  const nuke = getNuclearRisk(M);
+  const speed = 0.1 + Math.pow(M/100,2)*6 + (nuke/100)*8;
+  elapsed += dt*speed;
+  const rem = Math.max(0, totalSeconds-elapsed);
+  if(rem<=0 && !collapsed){
+    collapsed = true;
+    collapseScreen.classList.add('show');
+  }
+  const h = Math.floor(rem/3600);
+  const m = Math.floor((rem%3600)/60);
+  const s = Math.floor(rem%60);
+  countdownEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const ratio = rem/totalSeconds;
+  countdownEl.style.color = ratio>0.5?'#60c0ff':ratio>0.25?'#ff9040':'#ff2020';
+}
+
+function updateStatus(){
+  const nuke = getNuclearRisk(M);
+  const aiLevel = Math.round(Math.pow(M/100,1.3)*100);
+  const ext = Math.round(Math.min(100, aiLevel*0.5 + nuke*0.7));
+  const spd = +(0.1+Math.pow(M/100,2)*6+(nuke/100)*8).toFixed(1);
+
+  mAI.textContent = aiLevel+'%';
+  mNuke.textContent = Math.round(nuke)+'%';
+  mExt.textContent = ext+'%';
+  mSpd.textContent = spd+'x';
+
+  let label, bg, color, barColor;
+  if(M<20){
+    label='STABLE'; bg='rgba(30,160,80,0.25)'; color='#40d080'; barColor='#1d9e50';
+  } else if(M<40){
+    label='CRITICAL'; bg='rgba(200,150,0,0.25)'; color='#f0c030'; barColor='#ba7500';
+  } else if(M<60){
+    label='ESCALATION'; bg='rgba(220,80,0,0.25)'; color='#ff7030'; barColor='#cc4400';
+  } else if(M<80){
+    label='NUCLEAR THRESHOLD'; bg='rgba(160,20,220,0.3)'; color='#cc44ff'; barColor='#8820cc';
+    if(!warningShown){
+      warningShown=true;
+      nuclearWarning.style.opacity='1';
+      setTimeout(()=>{ nuclearWarning.style.opacity='0'; },3000);
+    }
+  } else {
+    label='COLLAPSE'; bg='rgba(220,20,20,0.35)'; color='#ff2020'; barColor='#cc0000';
+  }
+
+  if(M<60) warningShown=false;
+
+  statusBadge.textContent=label;
+  statusBadge.style.background=bg;
+  statusBadge.style.color=color;
+  statusBadge.style.border='1px solid '+color;
+  phaseBar.style.background=barColor;
+
+  const trackBg = M<40?'#2a1e3e':M<60?'#3e1a0a':M<80?'#2a0a3e':'#3e0a0a';
+  milSlider.style.background=trackBg;
+}
+
+function frame(now){
+  requestAnimationFrame(frame);
+  const dt = Math.min((now-lastTime)/1000, 0.05);
+  lastTime = now;
+  frameCount++;
+
+  if(!collapsed){ updateCountdown(dt); updateStatus(); }
+
+  ctx.clearRect(0,0,W,H);
+
+  const nuke = getNuclearRisk(M);
+  if(M>5){
+    const aiContam = Math.pow(M/100,1.6)*0.15;
+    const nukeContam = (nuke/100)*0.2;
+    ctx.fillStyle = `rgba(180,20,20,${aiContam})`;
+    ctx.fillRect(0,0,W,H);
+    if(nuke>0){
+      ctx.fillStyle = `rgba(120,0,200,${nukeContam*0.5})`;
+      ctx.fillRect(0,0,W,H);
+    }
+  }
+
+  const aiSpawnRate = 0.2+M*0.14;
+  if(!collapsed && Math.random()<aiSpawnRate*dt){
+    const city = CITIES[Math.floor(Math.random()*CITIES.length)];
+    const c = getCoord(city);
+    spawnExplosion(c.x,c.y,0.3+Math.random()*0.7*(M/100),false);
+  }
+
+  if(!collapsed && nuke>10 && Math.random()<(nuke/100)*2*dt){
+    const from = CITIES[Math.floor(Math.random()*CITIES.length)];
+    const to = CITIES[Math.floor(Math.random()*CITIES.length)];
+    spawnMissile(getCoord(from), getCoord(to));
+  }
+
+  if(!collapsed && M>5 && Math.random()<(0.4+M*0.09)*dt){
+    const city = CITIES[Math.floor(Math.random()*CITIES.length)];
+    const c = getCoord(city);
+    warningNodes.push({x:c.x,y:c.y,pulse:0,life:3.0,nuclear:nuke>30});
+  }
+
+  for(let i=missiles.length-1;i>=0;i--){
+    const ms = missiles[i];
+    ms.progress += ms.speed;
+    ms.trail.push({x:ms.x+(ms.tx-ms.x)*ms.progress, y:ms.y+(ms.ty-ms.y)*ms.progress});
+    if(ms.trail.length>20) ms.trail.shift();
+
+    ctx.strokeStyle='rgba(255,220,60,0.7)';
+    ctx.lineWidth=1.2;
+    ctx.beginPath();
+    ms.trail.forEach((pt,idx)=>{
+      ctx.globalAlpha = idx/ms.trail.length*0.8;
+      if(idx===0) ctx.moveTo(pt.x,pt.y); else ctx.lineTo(pt.x,pt.y);
+    });
+    ctx.stroke();
+    ctx.globalAlpha=1;
+
+    if(ms.progress>=1){
+      const tx=ms.x+(ms.tx-ms.x)*1;
+      const ty=ms.y+(ms.ty-ms.y)*1;
+      spawnExplosion(tx,ty,1.2,true);
+      spawnMushroom(tx,ty);
+      missiles.splice(i,1);
+    }
+  }
+
+  for(let i=mushrooms.length-1;i>=0;i--){
+    const mu = mushrooms[i];
+    mu.phase += dt*2;
+    mu.life -= mu.decay;
+    if(mu.life<=0){mushrooms.splice(i,1);continue;}
+    const r = mu.maxR*(1-mu.life*0.3);
+    const stemH = r*1.5*Math.min(1,mu.phase*0.5);
+    ctx.globalAlpha = mu.life*0.7;
+    ctx.fillStyle=`rgba(255,120,20,${mu.life*0.6})`;
+    ctx.beginPath();
+    ctx.ellipse(mu.x, mu.y-stemH, r*0.9, r*0.55, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle=`rgba(80,80,80,${mu.life*0.4})`;
+    ctx.beginPath();
+    ctx.ellipse(mu.x, mu.y-stemH*0.3, r*0.2, stemH*0.4, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha=1;
+  }
+
+  for(let i=ripples.length-1;i>=0;i--){
+    const r=ripples[i];
+    r.r += (r.maxR-r.r)*0.08;
+    r.life -= r.decay;
+    if(r.life<=0){ripples.splice(i,1);continue;}
+    ctx.strokeStyle = r.nuclear?`rgba(200,60,255,${r.life*0.5})`:`rgba(255,80,20,${r.life*0.5})`;
+    ctx.lineWidth=r.nuclear?2:1.5;
+    ctx.beginPath();
+    ctx.arc(r.x,r.y,r.r,0,Math.PI*2);
+    ctx.stroke();
+  }
+
+  for(let i=warningNodes.length-1;i>=0;i--){
+    const n=warningNodes[i];
+    n.pulse+=dt*4;
+    n.life-=dt*0.8;
+    if(n.life<=0){warningNodes.splice(i,1);continue;}
+    const alpha=Math.min(1,n.life)*0.9;
+    const pr=4+Math.sin(n.pulse)*3;
+    ctx.fillStyle=n.nuclear?`rgba(180,40,255,${alpha})`:`rgba(255,60,30,${alpha})`;
+    ctx.beginPath(); ctx.arc(n.x,n.y,pr,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle=n.nuclear?`rgba(200,100,255,${alpha*0.5})`:`rgba(255,120,60,${alpha*0.5})`;
+    ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(n.x,n.y,pr+6+Math.sin(n.pulse*1.5)*4,0,Math.PI*2); ctx.stroke();
+  }
+
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx; p.y+=p.vy;
+    p.vx*=0.96; p.vy*=0.96;
+    p.life-=p.decay;
+    if(p.life<=0){particles.splice(i,1);continue;}
+    if(p.nuclear){
+      const g=Math.floor(40+p.life*160);
+      ctx.fillStyle=`rgba(255,${g},20,${p.life*0.85})`;
+    } else {
+      ctx.fillStyle=`rgba(255,${Math.floor(80+p.life*120)},20,${p.life*0.9})`;
+    }
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.r*(0.5+p.life*0.5),0,Math.PI*2);
+    ctx.fill();
+  }
+
+  if(M>=70){
+    const scanY = (frameCount*0.6)%(H*2);
+    const alpha = 0.03+Math.sin(frameCount*0.04)*0.02;
+    ctx.strokeStyle=`rgba(180,20,255,${alpha})`;
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    const y = scanY<H?scanY:H*2-scanY;
+    ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  }
+}
+
+function resetSim(){
+  collapsed=false;
+  elapsed=0;
+  warningShown=false;
+  particles=[];
+  warningNodes=[];
+  ripples=[];
+  missiles=[];
+  mushrooms=[];
+  milSlider.value=5;
+  M=5;
+  milVal.textContent='5%';
+  milVal.style.color='#cc44ff';
+  collapseScreen.classList.remove('show');
+  lastTime=performance.now();
+}
+
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
